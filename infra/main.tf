@@ -6,10 +6,7 @@ locals {
   tags = {
     project = "${local.name_prefix}-k8s"
   }
-  node_names = {
-    main  = "main"
-    node1 = "node1"
-  }
+  number_of_nodes = 3
 }
 
 data "aws_canonical_user_id" "current_user" {}
@@ -104,7 +101,9 @@ resource "aws_iam_instance_profile" "ssm_instance_profile" {
   role = aws_iam_role.ssm_role.name
 }
 
-resource "aws_instance" "main" {
+resource "aws_instance" "nodes" {
+  for_each = toset([for k in range(local.number_of_nodes) : tostring(k)])
+
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public.id
@@ -112,17 +111,6 @@ resource "aws_instance" "main" {
   associate_public_ip_address = true
 
   tags = {
-    Name = "${local.name_prefix}-main"
-  }
-}
-
-resource "aws_instance" "node1" {
-  ami                  = data.aws_ami.ubuntu.id
-  instance_type        = "t3.micro"
-  subnet_id            = aws_subnet.public.id
-  iam_instance_profile = aws_iam_instance_profile.ssm_instance_profile.name
-
-  tags = {
-    Name = "${local.name_prefix}-node1"
+    Name = "${local.name_prefix}-node${each.value}"
   }
 }

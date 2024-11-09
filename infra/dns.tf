@@ -7,13 +7,13 @@ output "zoneid" {
   value = data.aws_route53_zone.delegated_zone.zone_id
 }
 
-resource "aws_route53_record" "master_node" {
+resource "aws_route53_record" "node" {
+  for_each = aws_instance.nodes
   provider = aws.dns
-  name     = "${local.node_names["main"]}.${local.base_domain}"
+  name     = "node${each.key}.jlj.kurs.capragruppen.tech"
   type     = "CNAME"
+  ttl      = 60
   zone_id  = data.aws_route53_zone.delegated_zone.id
-  ttl = 60
 
-  records = [aws_instance.main.public_dns]
-
+  records = [each.value.public_dns]
 }
