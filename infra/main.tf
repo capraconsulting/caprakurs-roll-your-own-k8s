@@ -1,13 +1,24 @@
 locals {
-  name_prefix = "caprakurs"
+  name_prefix      = "caprakurs"
+  username         = data.aws_canonical_user_id.current_user.display_name
+  hosted_zone_name = "kurs.capragruppen.tech"
+  base_domain      = "${local.username}.${local.hosted_zone_name}"
   tags = {
     project = "${local.name_prefix}-k8s"
   }
+  node_names = {
+    main  = "main"
+    node1 = "node1"
+  }
 }
+
+data "aws_canonical_user_id" "current_user" {}
+data "aws_caller_identity" "current_account" {}
 
 resource "aws_vpc" "this" {
   cidr_block = "10.10.0.0/16"
 
+  enable_dns_hostnames = true
 
   tags = merge(local.tags, {
     Name = "${local.name_prefix}-vpc"
@@ -94,10 +105,11 @@ resource "aws_iam_instance_profile" "ssm_instance_profile" {
 }
 
 resource "aws_instance" "main" {
-  ami                  = data.aws_ami.ubuntu.id
-  instance_type        = "t3.micro"
-  subnet_id            = aws_subnet.public.id
-  iam_instance_profile = aws_iam_instance_profile.ssm_instance_profile.name
+  ami                         = data.aws_ami.ubuntu.id
+  instance_type               = "t3.micro"
+  subnet_id                   = aws_subnet.public.id
+  iam_instance_profile        = aws_iam_instance_profile.ssm_instance_profile.name
+  associate_public_ip_address = true
 
   tags = {
     Name = "${local.name_prefix}-main"
