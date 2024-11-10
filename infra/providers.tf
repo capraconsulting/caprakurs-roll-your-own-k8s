@@ -26,6 +26,3 @@ data "aws_caller_identity" "second" {
   provider = aws.dns
 }
 
-output "second" {
-  value = data.aws_caller_identity.second.arn
-}
