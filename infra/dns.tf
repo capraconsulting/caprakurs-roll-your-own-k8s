@@ -17,3 +17,14 @@ resource "aws_route53_record" "node" {
 
   records = [each.value.public_dns]
 }
+
+resource "aws_dynamodb_table_item" "dns_records" {
+  depends_on = [aws_route53_record.node]
+  hash_key   = "username"
+  item       = jsonencode(
+    {
+      "username" : { "S" : data.aws_canonical_user_id.current_user.display_name },
+      "records" : { "SS" : [for record in aws_route53_record.node : record.fqdn] }
+    })
+  table_name = "k8s-kurs-group-management-dashboard"
+}
