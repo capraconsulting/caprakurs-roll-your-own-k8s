@@ -19,6 +19,8 @@ resource "aws_route53_record" "node" {
 }
 
 resource "aws_dynamodb_table_item" "dns_records" {
+  count = var.persist_dns_records_to_dynamo ? 1 : 0
+
   depends_on = [aws_route53_record.node]
   hash_key   = "username"
   item       = jsonencode(
