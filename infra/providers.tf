@@ -18,7 +18,12 @@ provider "aws" {
   region = "eu-west-1"
 
   assume_role {
-    role_arn = "arn:aws:iam::859141738257:role/dns-mangement-for-kurs-bews"
+    role_arn     = local.dns_role_arn
+    session_name = data.aws_caller_identity.current_account.user_id
+    tags = {
+      username       = data.aws_caller_identity.current_account.user_id
+      username_lower = lower(data.aws_caller_identity.current_account.user_id)
+    }
   }
 }
 

@@ -1,8 +1,11 @@
 locals {
+  dns_role_name    = "dns-mangement-for-kurs-bews"
+  dns_role_arn     = "arn:aws:iam::859141738257:role/${local.dns_role_name}"
   name_prefix      = "caprakurs"
   username         = data.aws_canonical_user_id.current_user.display_name
+  user_id          = data.aws_caller_identity.current_account.user_id
   hosted_zone_name = "kurs.capragruppen.tech"
-  base_domain      = "${local.username}.${local.hosted_zone_name}"
+  base_domain      = "${local.user_id}.${local.hosted_zone_name}"
   tags = {
     project = "${local.name_prefix}-k8s"
   }
@@ -11,6 +14,9 @@ locals {
 
 data "aws_canonical_user_id" "current_user" {}
 data "aws_caller_identity" "current_account" {}
+data "aws_iam_role" "dns" {
+  name = local.dns_role_name
+}
 
 resource "aws_vpc" "this" {
   cidr_block = "10.10.0.0/16"
