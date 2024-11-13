@@ -17,6 +17,9 @@ We will be go through:
 
 # Prerequisites
 
+## jq
+For running the script for ssh-ing into machines, JQ is required. Install trough brew.
+
 ## Terraform
 
 In order to do this workshop, you need to have `terraform` installed. We recommend installing it through [`tfenv`](https://github.com/tfutils/tfenv).
