@@ -35,6 +35,10 @@ Pros:
 Cons:
 - Most people are probably used to the --profile. But just try it. You will love it!
 
+### How to use it?
+1. Activate a shell by `aws-vault exec <profile>`
+1. Login in a browser with `aws-vault login <profile>`
+1. Thank me later 
 
 ## Terraform
 
