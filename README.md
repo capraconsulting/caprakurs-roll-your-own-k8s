@@ -20,6 +20,22 @@ We will be go through:
 ## jq
 For running the script for ssh-ing into machines, JQ is required. Install trough brew.
 
+## aws-vault (Optional but highly recommended)
+In order to easily manage what account you have activated in your cli environment, we highly recommend using aws-vault.
+Having aws-vault installed, you can simply enter the access keys from the AWS IAM User and get temporary sessions in a subshell by simple commands.
+Read more about aws vault here:
+https://github.com/99designs/aws-vault
+
+Pros: 
+- does not store secrets in plane text
+- access to correct env by simple profile commands
+- supports aws cli out of the box
+- has features for running ec2 security meta servers
+
+Cons:
+- Most people are probably used to the --profile. But just try it. You will love it!
+
+
 ## Terraform
 
 In order to do this workshop, you need to have `terraform` installed. We recommend installing it through [`tfenv`](https://github.com/tfutils/tfenv).
@@ -95,6 +111,7 @@ Our infrastructure will be hosted in AWS, and thus you require an AWS user.
 When creating an account in AWS, you will by default create a single root user, that has admin permissions access to absolutely everything inside your account. This is a major security risk, and you should always create and use another account with less permissions.
 
 # TODO Jakob: Could you add a quick step-by-step guide on how to create a user? Linking to a guide from AWS or similar with some explaining text should be sufficient.
+# Setup IAM User 
 
 # TODO: Add a final command to verify that your setup is working as expected.
 
