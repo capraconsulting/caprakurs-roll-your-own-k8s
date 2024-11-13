@@ -116,8 +116,15 @@ When creating an account in AWS, you will by default create a single root user, 
 
 # TODO Jakob: Could you add a quick step-by-step guide on how to create a user? Linking to a guide from AWS or similar with some explaining text should be sufficient.
 # Setup IAM User 
+1. Log in to your aws account with 
+1. Go to IAM service
+1. Create new IAM user
+1. Setup MFA
+1. Create Secruity credentials
+1. Add profile to aws-vault
 
-# TODO: Add a final command to verify that your setup is working as expected.
+## Verify access
+Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally. 
 
 # Architectural Overview
 
