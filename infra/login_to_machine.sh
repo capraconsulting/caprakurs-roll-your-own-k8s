@@ -27,7 +27,8 @@ if [[ $choice =~ ^[0-9]+$ ]] && [ "$choice" -le "${#options[@]}" ] && [ "$choice
     instance_id=$(echo "${options[$((choice - 1))]}" | sed -E 's/.*\(([^\)]+)\).*/\1/')
 
     # Start the SSM session
-    aws ssm start-session --target "$instance_id"
+    # aws ssm start-session --target "$instance_id"
+    ssh -o "ProxyCommand=aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=22'" -i kurs_priv.pem ubuntu@"$instance_id"
 else
     echo "Invalid selection."
 fi

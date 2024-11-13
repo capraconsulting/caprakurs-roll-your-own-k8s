@@ -1,22 +1,25 @@
 locals {
-  dns_role_name    = "dns-mangement-for-kurs-bews"
-  dns_role_arn     = "arn:aws:iam::859141738257:role/${local.dns_role_name}"
-  name_prefix      = "caprakurs"
-  username         = data.aws_canonical_user_id.current_user.display_name
-  user_id          = data.aws_caller_identity.current_account.user_id
-  hosted_zone_name = "kurs.capragruppen.tech"
-  base_domain      = "${local.user_id}.${local.hosted_zone_name}"
+  name_prefix = "caprakurs"
   tags = {
     project = "${local.name_prefix}-k8s"
   }
   number_of_nodes = 3
 }
 
-data "aws_canonical_user_id" "current_user" {}
-data "aws_caller_identity" "current_account" {}
-data "aws_iam_role" "dns" {
-  name = local.dns_role_name
+variable "key_name" {
+  default = "upk"
 }
+
+resource "tls_private_key" "kurs_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+resource "aws_key_pair" "generated_key" {
+  key_name   = var.key_name
+  public_key = tls_private_key.kurs_key.public_key_openssh
+}
+
 
 resource "aws_vpc" "this" {
   cidr_block = "10.10.0.0/16"
@@ -38,6 +41,22 @@ resource "aws_route_table" "public" {
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.this.id
+  }
+}
+
+resource "aws_security_group" "instance_security" {
+  vpc_id = aws_vpc.this.id
+  ingress {
+    from_port   = 0
+    to_port     = 65535
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "all"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 }
 
@@ -73,10 +92,6 @@ data "aws_ami" "ubuntu" {
   owners = ["amazon"] # Canonical
 }
 
-output "ami" {
-  value = data.aws_ami.ubuntu.name
-}
-
 # Create IAM Role
 resource "aws_iam_role" "ssm_role" {
   name = "${local.name_prefix}-ec2-roles"
@@ -110,6 +125,9 @@ resource "aws_iam_instance_profile" "ssm_instance_profile" {
 resource "aws_instance" "nodes" {
   for_each = toset([for k in range(local.number_of_nodes) : tostring(k)])
 
+  security_groups = [aws_security_group.instance_security.id]
+
+  key_name                    = aws_key_pair.generated_key.key_name
   ami                         = data.aws_ami.ubuntu.id
   instance_type               = "t3.micro"
   subnet_id                   = aws_subnet.public.id
@@ -119,4 +137,32 @@ resource "aws_instance" "nodes" {
   tags = {
     Name = "${local.name_prefix}-node${each.value}"
   }
+}
+
+
+output "private_key" {
+  value     = tls_private_key.kurs_key.private_key_pem
+  sensitive = true
+}
+
+resource "local_sensitive_file" "priv_pem_key" {
+  filename             = "kurs_priv.pem"
+  directory_permission = "700"
+  file_permission      = "600"
+  content              = tls_private_key.kurs_key.private_key_pem
+}
+
+output "dns" {
+  value = jsonencode({
+    "nodes" : [for node in aws_instance.nodes : node.public_dns]
+  })
+}
+
+resource "local_file" "dns" {
+  depends_on = [aws_instance.nodes]
+
+  filename = "dns.json"
+  content  = jsonencode({
+    "nodes" : {for k, node in aws_instance.nodes : node.tags.Name => node.public_dns}
+  })
 }
