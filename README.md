@@ -344,9 +344,7 @@ sudo apt-mark hold kubelet kubeadm kubectl
 sudo apt install jq -y
 export local_ip="$(ip --json addr show ens5 | jq -r '.[0].addr_info[] | select(.family == "inet") | .local')"
 export IPADDR="$local_ip"
-sudo cat > /etc/default/kubelet << EOF
-KUBELET_EXTRA_ARGS=--node-ip=$local_ip
-EOF
+echo "KUBELET_EXTRA_ARGS=--node-ip=$local_ip" | sudo tee /etc/default/kubelet > /dev/null
 ```
 
 1. Export required cluster config variables
@@ -369,7 +367,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 1. Copy the kubeadm join command from output. 
 ```bash
-kubeadm join [YOURMASTERNODEIP]:6443 - token [thetokendisplayed] \
+sudo kubeadm join [YOURMASTERNODEIP]:6443 - token [thetokendisplayed] \
  - discovery-token-ca-cert-hash sha256:[thetokendisplayed]
 ```
 
@@ -408,8 +406,8 @@ helm repo update
 ## Starting cilium network
 
 ```bash
-API_SERVER_IP="$IPADDR"
-API_SERVER_PORT=6443
+export API_SERVER_IP="$IPADDR"
+export API_SERVER_PORT=6443
 helm install cilium cilium/cilium --version 1.15.6 \
 --namespace kube-system \
 --set k8sServiceHost=${API_SERVER_IP} \
@@ -439,6 +437,18 @@ rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
 ### Wait for cilium to be ready 
 ```bash
 cilium status --wait
+
+```
+
+### Run a test suite in your cluster to verify that Cilium is working as expected 
+```bash
+cilium connectivity test
+```
+
+## Install Hubble?
+
+```
+https://docs.cilium.io/en/stable/observability/hubble/setup/#hubble-setup
 ```
 
 ### Create Cilium Load balancer 
