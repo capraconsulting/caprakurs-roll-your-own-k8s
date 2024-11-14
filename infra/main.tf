@@ -48,8 +48,8 @@ resource "aws_security_group" "instance_security" {
   vpc_id = aws_vpc.this.id
   ingress {
     from_port   = 0
-    to_port     = 65535
-    protocol    = "tcp"
+    to_port     = 0
+    protocol    = "all"
     cidr_blocks = ["0.0.0.0/0"]
   }
   egress {
