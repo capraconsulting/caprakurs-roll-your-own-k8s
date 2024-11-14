@@ -350,13 +350,13 @@ echo "KUBELET_EXTRA_ARGS=--node-ip=$local_ip" | sudo tee /etc/default/kubelet > 
 1. Export required cluster config variables
 ```bash
 export NODENAME=$(hostname -s)
-export POD_CIDR="172.16.0.0/16"
-export CLUSTER_CIDR="10.96.0.0/28"
+export POD_CIDR="10.244.0.0/16"
+
 ```
 
 1. Create K8s cluster
 ```bash
-sudo kubeadm init --apiserver-advertise-address=$IPADDR  --apiserver-cert-extra-sans=$IPADDR  --pod-network-cidr=$POD_CIDR --node-name $NODENAME --ignore-preflight-errors Swap --skip-phases=addon/kube-proxy --service-cidr=$CLUSTER_CIDR
+sudo kubeadm init --apiserver-advertise-address=$IPADDR  --apiserver-cert-extra-sans=$IPADDR  --pod-network-cidr=$POD_CIDR --node-name $NODENAME --ignore-preflight-errors Swap
 ```
 
 1. Make k8s available to current user 
@@ -381,6 +381,12 @@ You can also see the pods running:
 ```bash
 kubectl get pods  --all-namespaces
 ```
+
+# Flannel networking
+```
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+```
+
 
 # Cilium Networking
 
