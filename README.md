@@ -222,16 +222,24 @@ TL;DR:
         </details>
 2. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
 3. (Jakob jobber med denne)                            Install kubeadm, kubelet and kubectl on the host machine (Guide)
-    Add Google GPG key to keystore
-    `sudo apt-get install -y kubelet kubeadm kubectl`
-    Installer kubectl
-   1. Last ned kubectl `curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"`
-   2. Installer `sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl`
-   3. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
-      Kustomize Version: v5.4.2 er riktig. 
+   Add Google GPG key to keystore
+   `sudo apt-get install -y kubelet kubeadm kubectl`
+   Installer kubectl
+    1. `sudo apt update`
+    2. `sudo apt-get install -y apt-transport-https ca-certificates curl gpg`
+    3. `curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg`
+    4. `echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list`
+    5. ```bash 
+       sudo apt-get update
+       sudo apt-get install -y kubelet kubeadm kubectl
+       sudo apt-mark hold kubelet kubeadm kubectl
+       ```
+    6. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
+           Kustomize Version: v5.4.2 er riktig.
+
 4.                             Initialize Kubernetes on your host with the following command:
-    `kubeadm init --pod-network-cidr=10.244.0.0/16`
-    Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
+   `kubeadm init --pod-network-cidr=10.244.0.0/16`
+   Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
 5.                             Install Flannel:
     `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml`
 
