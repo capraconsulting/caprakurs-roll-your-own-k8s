@@ -220,7 +220,7 @@ TL;DR:
        sudo apt install docker.io
        ```
         </details>
-3. Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
+3. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
 4.                             Install kubeadm, kubelet and kubectl on the host machine (Guide)
     Add Google GPG key to keystore
     `sudo apt-get install -y kubelet kubeadm kubectl`
