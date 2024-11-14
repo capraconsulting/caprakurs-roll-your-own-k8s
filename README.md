@@ -275,6 +275,194 @@ Guide: [Creating a single control-plane cluster with kubeadm](https://kubernetes
 
 **TODO: Update this step-by-step guide to 2024-standard. ALSO: Specify an older Kubernetes version (not too old!) so that we can update our cluster later.**
 
+
+1. Prepare networking for k8s:
+```bash
+sudo apt-get update -y
+
+sudo cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+
+sudo sysctl --system
+sudo sysctl -w net.ipv4.ip_forward=1
+
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+swapoff -a
+(crontab -l 2>/dev/null; echo "@reboot /sbin/swapoff -a") | crontab - || true
+
+```
+
+1. Install containerd, our container runtime 
+```bash
+
+
+# INSTALL CONTAINERD
+wget https://github.com/containerd/containerd/releases/download/v1.6.8/containerd-1.6.8-linux-amd64.tar.gz
+
+sudo tar Cxzvf /usr/local containerd-1.6.8-linux-amd64.tar.gz
+
+wget https://github.com/opencontainers/runc/releases/download/v1.1.3/runc.amd64
+
+sudo install -m 755 runc.amd64 /usr/local/sbin/runc
+
+wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
+
+sudo mkdir -p /opt/cni/bin
+
+sudo tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.1.1.tgz
+
+sudo mkdir /etc/containerd
+
+containerd config default | sudo tee /etc/containerd/config.toml
+
+sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+
+sudo curl -L https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -o /etc/systemd/system/containerd.service
+
+sudo systemctl daemon-reload
+
+sudo systemctl enable --now containerd
+
+sudo systemctl status containerd
+# END CONTAINERD
+```
+
+1. Install k8s
+```bash
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+sudo apt-get update -y
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl
+
+sudo apt install jq -y
+export local_ip="$(ip --json addr show ens5 | jq -r '.[0].addr_info[] | select(.family == "inet") | .local')"
+export IPADDR="$local_ip"
+sudo cat > /etc/default/kubelet << EOF
+KUBELET_EXTRA_ARGS=--node-ip=$local_ip
+EOF
+```
+
+1. Export required cluster config variables
+```bash
+export NODENAME=$(hostname -s)
+export POD_CIDR="172.16.0.0/16"
+export CLUSTER_CIDR="10.96.0.0/28"
+```
+
+1. Create K8s cluster
+```bash
+sudo kubeadm init --apiserver-advertise-address=$IPADDR  --apiserver-cert-extra-sans=$IPADDR  --pod-network-cidr=$POD_CIDR --node-name $NODENAME --ignore-preflight-errors Swap --skip-phases=addon/kube-proxy --service-cidr=$CLUSTER_CIDR
+```
+
+1. Make k8s available to current user 
+```bash
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+1. Copy the kubeadm join command from output. 
+```bash
+kubeadm join [YOURMASTERNODEIP]:6443 - token [thetokendisplayed] \
+ - discovery-token-ca-cert-hash sha256:[thetokendisplayed]
+```
+
+1. Verify the Nodes are registered:
+
+```bash
+kubectl get nodes
+```
+Note: All notes should have status NotReady as they are missing internet
+You can also see the pods running:
+```bash
+kubectl get pods  --all-namespaces
+```
+
+# Cilium Networking
+
+1. First, lets install helm, which will intall cilium for us:
+
+```bash
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+sudo apt-get update
+
+sudo apt-get install helm -y
+```
+
+Now install cilium:
+```bash
+helm repo add cilium https://helm.cilium.io/
+
+helm repo update
+```
+
+## Starting cilium network
+
+```bash
+API_SERVER_IP="$IPADDR"
+API_SERVER_PORT=6443
+helm install cilium cilium/cilium --version 1.15.6 \
+--namespace kube-system \
+--set k8sServiceHost=${API_SERVER_IP} \
+--set k8sServicePort=${API_SERVER_PORT} \
+--set kubeProxyReplacement=true \
+--set l2announcements.enabled=true \
+--set encryption.enabled=true \
+--set encryption.type=wireguard \
+--set ingressController.enabled=true \
+--set ingressController.loadbalancerMode=dedicated \
+--set hubble.relay.enabled=true \
+--set hubble.ui.enabled=true 
+```
+
+### Install Cilium Cli for status:
+
+```bash
+CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
+CLI_ARCH=amd64
+if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
+curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
+sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+rm cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
+```
+
+### Wait for cilium to be ready 
+```bash
+cilium status --wait
+```
+
+### Create Cilium Load balancer 
+One of the key features of cilium is the load balancer. Lets create a load balancer with 
+
+```bash
+apiVersion: "cilium.io/v2alpha1"
+kind: CiliumLoadBalancerIPPool
+metadata:
+  name: "pool-01"
+spec:
+  cidrs:
+  - cidr: "192.168.65.32/27"
+```
+
+### Use cilium 
+```bash
+kubectl apply -f ip-addr-pool-01.yaml
+```
+
+
+
+
+
 TL;DR:
 
 1.  Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
