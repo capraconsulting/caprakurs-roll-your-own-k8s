@@ -18,27 +18,36 @@ We will be go through:
 # Prerequisites
 
 ## jq
-For running the script for ssh-ing into machines, JQ is required. Install trough brew.
+
+For running the script for ssh-ing into machines, JQ is required. Install through brew.
 
 ## aws-vault (Optional but highly recommended)
+
 In order to easily manage what account you have activated in your cli environment, we highly recommend using aws-vault.
 Having aws-vault installed, you can simply enter the access keys from the AWS IAM User and get temporary sessions in a subshell by simple commands.
 Read more about aws vault here:
 https://github.com/99designs/aws-vault
 
-Pros: 
+Pros:
+
 - does not store secrets in plane text
 - access to correct env by simple profile commands
 - supports aws cli out of the box
 - has features for running ec2 security meta servers
 
 Cons:
+
 - Most people are probably used to the --profile. But just try it. You will love it!
 
+## kubectl
+
+TODO: Add steps for installing kubectl
+
 ### How to use it?
+
 1. Activate a shell by `aws-vault exec <profile>`
 1. Login in a browser with `aws-vault login <profile>`
-1. Thank me later 
+1. Thank me later
 
 ## Terraform
 
@@ -114,8 +123,9 @@ Our infrastructure will be hosted in AWS, and thus you require an AWS user.
 
 When creating an account in AWS, you will by default create a single root user, that has admin permissions access to absolutely everything inside your account. This is a major security risk, and you should always create and use another account with less permissions.
 
-# Setup IAM User 
-1. Log in to your aws account with 
+# Setup IAM User
+
+1. Log in to your aws account with
 1. Go to IAM service
 1. Create new IAM user
 1. Setup MFA
@@ -123,87 +133,91 @@ When creating an account in AWS, you will by default create a single root user, 
 1. Add profile to aws-vault
 
 ## Verify access
-Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally. 
+
+Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally.
 
 # Architectural Overview
 
 - We will use self-hosted virtual machines (EC2 instances) in AWS as nodes in our cluster
-- In total we will use three nodes, one for the Kubernetes control plane (more on this later) and two for our data plane, where our applications (pods) will be running.
-
-![Architectural overview of our Kubernetes cluster](./assets/01-intro.png "Architectural overview of our Kubernetes cluster")
+- In total we will use three nodes, one for the Kubernetes control plane (more on this later) and two for our worker nodes, where our applications (pods) will be running.
 
 <details>
 <summary>Vocabulary</summary>
 
+[Node](https://kubernetes.io/docs/concepts/architecture/nodes/)
+
+- (Virtual) machines that are part of our Kubernetes cluster. In this workshop we will use 3 nodes that are EC2 instances hosted in AWS.
+
 [Control plane](https://kubernetes.io/docs/reference/glossary/?fundamental=true#term-control-plane)
 
-- The container orchestration layer that exposes the API and interfaces to define, deploy, and manage the lifecycle of containers
+- The container orchestration layer that exposes the API and interfaces to define, deploy, and manage the lifecycle of containers.
+  The control plane usually runs on separate nodes from the worker nodes.
+  In larger clusters, the control plane is usually distributed across multiple nodes for fault tolerance.
 
-[Data plane](https://kubernetes.io/docs/reference/glossary/?fundamental=true#term-data-plane)
+[Worker Nodes](https://kubernetes.io/docs/reference/glossary/?fundamental=true#term-data-plane)
 
-- The container orchestration layer that exposes the API and interfaces to define, deploy, and manage the lifecycle of containers
+- The nodes that run your applications (pods) and provide the networking and storage resources needed by those applications.
+  There are usually multiple worker nodes in a cluster.
 
 </details>
 
+![Architectural overview of our Kubernetes cluster](./assets/architectural-overview-1.png "Architectural overview of our Kubernetes cluster")
+
 ## What are Control Plane components?
 
-The Kubernetes "Control plane" entails the components and software you need in order to manage your Kubernetes cluster.
-Like regular applications running in a Kubernetes cluster, these components are made up of Kubernetes resources like pods,
-deployments and stateful sets. Other approaches run these services "natively" on the nodes in the cluster itself, usually as
-`systemd` services or similar. There are multiple ways to deploy the control plane, where we will use `kubeadm` to set it up
+The Kubernetes `Control plane` encompasses the components and software you need in order to manage your Kubernetes cluster.
+Like regular applications/deployments running in a cluster, these components are made up of Kubernetes resources like pods,
+deployments and stateful sets. There are other ways to run these services "natively" on a node in the cluster, usually as
+`systemd` services or similar, but that will not be covered in this workshop.
+
+There are multiple ways to deploy the control plane, where we will use `kubeadm` to set it up
 for us. For more details on deployment options, check out the [official architecture variation documentation](https://kubernetes.io/docs/concepts/architecture/#architecture-variations).
 
 The components that make up the control plane are the following services:
 
-kube-apiserver
+[kube-controller-manager](https://kubernetes.io/docs/concepts/architecture/#kube-controller-manager) `c-m`
 
-- The front-facing REST API service that you interact with through `kubectl`
+- Runs a control loop, checking that nodes, replicas, services, tokens, endpoints++ are working and are in the desired state
 
-[etcd](https://etcd.io/)
-
-- Highly available key-value store. All configuration for your cluster is stored here.
-
-[cloud-controller-manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/)
+[cloud-controller-manager](https://kubernetes.io/docs/concepts/architecture/cloud-controller/) `c-cm`
 
 - Responsible for cloud-specific control login. This is a separate component that is used in managed Kubernetes solutions like [EKS](https://aws.amazon.com/eks/), [GKE](https://cloud.google.com/kubernetes-engine) and [AKS](https://azure.microsoft.com/en-us/products/kubernetes-service). Not relevant for us.
 
-kube-scheduler
+[kube-apiserver](https://kubernetes.io/docs/concepts/architecture/#kube-apiserver) `api`
 
-- Watches for newly created pods and schedules them to one or more nodes
+- The front-facing REST API service that you interact with through `kubectl`
 
-kube-controller-manager
+[etcd](https://etcd.io/) `etcd`
 
-- Runs a control loop, checking that nodes, replicas, services, tokens and endpoints are working and are in the desired state
+- Highly available key-value store. All configuration for your cluster is stored here.
 
-<details>
-<summary>Vocabulary</summary>
+[kube-scheduler](https://kubernetes.io/docs/concepts/architecture/#kube-scheduler) `sched`
 
-Control-plane
+- Watches for newly created pods and schedules them to one or more nodes that are part of the worker nodes
 
-- The container orchestration layer that exposes the API and interfaces to define, deploy, and manage the lifecycle of containers
+![Control Plane overview](./assets/control-plane-overview-1.png)
 
-Node
+## What are Worker Node components?
 
-- (Virtual) machines that are part of our cluster. Runs containerized applications.
-Controlled by the control plane
-</details>
+In order for the Control Plane to be able to manage and schedule workloads, it needs to manage worker nodes to execute that workload.
+In this workshop we will refer to these nodes as Worker Nodes or simply Workers.
+The term Node is also used in Kubernetes documentation and literature, but for clarity in this course we will use the term Worker.
 
-## What are Node components?
+All worker nodes run a set of services which together constitutes the Kubernetes runtime environment. These components are:
 
-All nodes run a set of services which together constitutes the Kubernetes runtime environment
+[kubelet](https://kubernetes.io/docs/concepts/architecture/#kubelet) `kubelet`
 
-kubelet
+- Responsible for running and monitoring the health of containers on the node, making sure the containers specified as part of a Pod (more on this later) are working as expected.
 
-- Monitors the health of containers running on the node, making sure the containers specified as part of a pod are running
+[kube-proxy (optional)](https://kubernetes.io/docs/concepts/architecture/#kube-proxy) `k-proxy`
 
-kube-proxy
+- Network proxy responsible for maintaining the network rules on nodes.
 
-- Network proxy responsible for maintaining the network rules on nodes
+[container runtime](https://kubernetes.io/docs/concepts/architecture/#container-runtime)
 
-container runtime
+- The container runtime used by `kubelet` to run containers. There are multiple choices available here, including [containerd](https://containerd.io/docs/), [CRI-O](https://cri-o.io/#what-is-cri-o) and [Docker Engine](https://docs.docker.com/). In thruth, any implementation that adheres to the Kubernetes [Container Runtime Interface (CRI)](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-node/container-runtime-interface.md) can be used. In this workshop, we will use Docker to run the ontainers on our nodes.
 
-- The container runtime used by Kubernetes. E.g. Docker, Containerd or CRI-O
-  - In our example, we will use Docker
+![Data Plane overview](./assets/worker-node-overview-1.png)
 
 ## Installing Kubernetes
 
@@ -213,26 +227,27 @@ Guide: [Creating a single control-plane cluster with kubeadm](https://kubernetes
 
 TL;DR:
 
-1. Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
+1.  Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
     1. <details>
         <summary>Solution</summary>
-        ```
+        <pre>
        sudo apt install docker.io
-       ```
+       </pre>
         </details>
-2. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
-3. Install kubeadm, kubelet and kubectl on all the machines. Kubectl is only needed on the control node, but why not install on all the nodes? You simply do copy paste either way:)
+2.  (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
+3.  Install kubeadm, kubelet and kubectl on all the machines. Kubectl is only needed on the control node, but why not install on all the nodes? You simply do copy paste either way:)
+
     1. `sudo apt update`
     2. `sudo apt-get install -y apt-transport-https ca-certificates curl gpg`
     3. `curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg`
     4. `echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list`
-    5. ```bash 
+    5. ```bash
        sudo apt-get update
        sudo apt-get install -y kubelet kubeadm kubectl
        sudo apt-mark hold kubelet kubeadm kubectl
        ```
     6. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
-           Kustomize Version: v5.4.2 er riktig.
+       Kustomize Version: v5.4.2 er riktig.
 
 4.  (Jakob jobber med denne)                           Initialize Kubernetes on your host with the following command:
    `kubeadm init --pod-network-cidr=10.244.0.0/16`
