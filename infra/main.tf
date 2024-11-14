@@ -134,7 +134,7 @@ resource "aws_instance" "nodes" {
 
   key_name                    = aws_key_pair.generated_key.key_name
   ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t3.micro"
+  instance_type               = "t3.medium"
   subnet_id                   = aws_subnet.public.id
   iam_instance_profile        = aws_iam_instance_profile.ssm_instance_profile.name
   associate_public_ip_address = true
