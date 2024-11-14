@@ -114,7 +114,6 @@ Our infrastructure will be hosted in AWS, and thus you require an AWS user.
 
 When creating an account in AWS, you will by default create a single root user, that has admin permissions access to absolutely everything inside your account. This is a major security risk, and you should always create and use another account with less permissions.
 
-# TODO Jakob: Could you add a quick step-by-step guide on how to create a user? Linking to a guide from AWS or similar with some explaining text should be sufficient.
 # Setup IAM User 
 1. Log in to your aws account with 
 1. Go to IAM service
