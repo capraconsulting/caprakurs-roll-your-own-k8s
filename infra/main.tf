@@ -3,12 +3,10 @@ locals {
   tags = {
     project = "${local.name_prefix}-k8s"
   }
+  key_name        = "${local.name_prefix}-pk"
   number_of_nodes = 3
 }
 
-variable "key_name" {
-  default = "upk"
-}
 
 resource "tls_private_key" "kurs_key" {
   algorithm = "RSA"
@@ -16,10 +14,13 @@ resource "tls_private_key" "kurs_key" {
 }
 
 resource "aws_key_pair" "generated_key" {
-  key_name   = var.key_name
+  key_name   = local.key_name
   public_key = tls_private_key.kurs_key.public_key_openssh
 }
 
+output "pubkey" {
+  value = aws_key_pair.generated_key.public_key
+}
 
 resource "aws_vpc" "this" {
   cidr_block = "10.10.0.0/16"
@@ -45,6 +46,8 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_security_group" "instance_security" {
+  name = "${local.name_prefix}-sg"
+
   vpc_id = aws_vpc.this.id
   ingress {
     from_port   = 0
@@ -130,7 +133,7 @@ resource "aws_iam_instance_profile" "ssm_instance_profile" {
 resource "aws_instance" "nodes" {
   for_each = toset([for k in range(local.number_of_nodes) : tostring(k)])
 
-  security_groups = [aws_security_group.instance_security.id]
+  vpc_security_group_ids = [aws_security_group.instance_security.id]
 
   key_name                    = aws_key_pair.generated_key.key_name
   ami                         = data.aws_ami.ubuntu.id
@@ -143,7 +146,6 @@ resource "aws_instance" "nodes" {
     Name = "${local.name_prefix}-node${each.value}"
   }
 }
-
 
 output "private_key" {
   value     = tls_private_key.kurs_key.private_key_pem
