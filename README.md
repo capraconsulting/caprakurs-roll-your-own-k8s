@@ -234,7 +234,7 @@ TL;DR:
     6. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
            Kustomize Version: v5.4.2 er riktig.
 
-4.                             Initialize Kubernetes on your host with the following command:
+4.  (Jakob jobber med denne)                           Initialize Kubernetes on your host with the following command:
    `kubeadm init --pod-network-cidr=10.244.0.0/16`
    Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
 5.                             Install Flannel:
