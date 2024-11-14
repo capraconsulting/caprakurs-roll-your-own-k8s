@@ -21,27 +21,96 @@ We will be go through:
 
 For running the script for ssh-ing into machines, JQ is required. Install through brew.
 
+<details>
+<summary>Installing on macOS</summary>
+
+If you do not have homebrew installed, follow the instructions here: [https://brew.sh/](https://brew.sh/)
+
+```
+brew install jq
+```
+
+</details>
+
+<details>
+<summary>Installing on Linux/Windows (WSL) (Not tested)</summary>
+
+```
+sudo apt-get update
+sudo apt-get install jq
+```
+
+</details>
+
+## AWS CLI
+
+To manage your AWS account, you need the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+
+<details>
+<summary>Installing on macOS</summary>
+
+If you do not have homebrew installed, follow the instructions here: [https://brew.sh/](https://brew.sh/)
+
+```
+brew install awscli
+```
+
+</details>
+
+<details>
+<summary>Installing on Linux/Windows (WSL) (Not tested)</summary>
+
+```
+sudo snap install aws-cli --classic
+```
+
+</details>
+
+## AWS Account
+
+Our infrastructure will be hosted in AWS, and thus you require an AWS user.
+
+If you don't have an AWS Account, [sign up here](https://signin.aws.amazon.com/signup?request_type=register).
+
+When creating an account in AWS, you will by default create a single root user, that has admin access to absolutely everything inside your account. This is a major security risk, and you should always create and use an IAM User with less permissions.
+
+### Setup IAM User
+
+1. Log in to your AWS account
+1. Go to the IAM Service
+1. Select "Access ,anagement -> Users" from the left-hand menu.
+1. Press the orange "Create User" button
+1. Provide a username and password. Make sure to tick the box "Provide user access to the AWS Management Console"
+1. On the "Set Permissions" page, click the "Attach policies directly" box and attach "AdministratorAccess". Note: This is sually a pretty bad idea, and you should probably delete this user once your are done with the workshop.
+1. Once your user has been created, log out and log back in again with your new user
+1. You now need an Access Key. Click your username in the upper right corner and select "Security credentials"
+1. Scroll down to the "Access keys" section and click "Create access key"
+1. Select use case "Command Line Interface (CLI)". Tick the box where it says you understand what you are doing and click "Next"
+1. Copy the Access Key and Secret Access Key to somewhere secure. You will not be able to view the secret again.
+
+1. (Optional) Add profile to aws-vault, see below
+
+## Verify access
+
+Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally.
+
 ## aws-vault (Optional but highly recommended)
 
 In order to easily manage what account you have activated in your cli environment, we highly recommend using aws-vault.
 Having aws-vault installed, you can simply enter the access keys from the AWS IAM User and get temporary sessions in a subshell by simple commands.
-Read more about aws vault here:
+Read more about aws vault here and how to install it here:
 https://github.com/99designs/aws-vault
 
 Pros:
 
-- does not store secrets in plane text
-- access to correct env by simple profile commands
-- supports aws cli out of the box
+- does not store secrets in plaintext
+- gives access to correct environment by simple profile commands
+- supports aws-cli out of the box
 - has features for running ec2 security meta servers
 
 Cons:
 
 - Most people are probably used to the --profile. But just try it. You will love it!
-
-## kubectl
-
-TODO: Add steps for installing kubectl
 
 ### How to use it?
 
@@ -116,25 +185,6 @@ terraform --version
 It should print your currently active version.
 
 </details>
-
-## AWS Account
-
-Our infrastructure will be hosted in AWS, and thus you require an AWS user.
-
-When creating an account in AWS, you will by default create a single root user, that has admin permissions access to absolutely everything inside your account. This is a major security risk, and you should always create and use another account with less permissions.
-
-# Setup IAM User
-
-1. Log in to your aws account with
-1. Go to IAM service
-1. Create new IAM user
-1. Setup MFA
-1. Create Secruity credentials
-1. Add profile to aws-vault
-
-## Verify access
-
-Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally.
 
 # Architectural Overview
 
@@ -249,10 +299,10 @@ TL;DR:
     6. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
        Kustomize Version: v5.4.2 er riktig.
 
-4.  (Jakob jobber med denne)                           Initialize Kubernetes on your host with the following command:
-   `kubeadm init --pod-network-cidr=10.244.0.0/16`
-   Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
-5.                             Install Flannel:
+4.  (Jakob jobber med denne) Initialize Kubernetes on your host with the following command:
+    `kubeadm init --pod-network-cidr=10.244.0.0/16`
+    Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
+5.                                      Install Flannel:
     `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml`
 
 <details>
