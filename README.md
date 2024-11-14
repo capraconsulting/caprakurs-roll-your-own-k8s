@@ -221,10 +221,7 @@ TL;DR:
        ```
         </details>
 2. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
-3. (Jakob jobber med denne)                            Install kubeadm, kubelet and kubectl on the host machine (Guide)
-   Add Google GPG key to keystore
-   `sudo apt-get install -y kubelet kubeadm kubectl`
-   Installer kubectl
+3. Install kubeadm, kubelet and kubectl on all the machines. Kubectl is only needed on the control node, but why not install on all the nodes? You simply do copy paste either way:)
     1. `sudo apt update`
     2. `sudo apt-get install -y apt-transport-https ca-certificates curl gpg`
     3. `curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg`
