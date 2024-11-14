@@ -213,15 +213,21 @@ Guide: [Creating a single control-plane cluster with kubeadm](https://kubernetes
 
 TL;DR:
 
-1. (Jakob is working on howto here) Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
-2.  Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
-3.                             Install kubeadm, kubelet and kubectl on the host machine (Guide)
+1. Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
+    1. <details>
+        <summary>Solution</summary>
+        ```
+       sudo apt install docker.io
+       ```
+        </details>
+3. Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
+4.                             Install kubeadm, kubelet and kubectl on the host machine (Guide)
     Add Google GPG key to keystore
     `sudo apt-get install -y kubelet kubeadm kubectl`
-4.                             Initialize Kubernetes on your host with the following command:
+5.                             Initialize Kubernetes on your host with the following command:
     `kubeadm init --pod-network-cidr=10.244.0.0/16`
     Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
-5.                             Install Flannel:
+6.                             Install Flannel:
     `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml`
 
 <details>
