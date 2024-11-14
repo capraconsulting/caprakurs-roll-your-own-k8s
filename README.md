@@ -224,6 +224,11 @@ TL;DR:
 3. (Jakob jobber med denne)                            Install kubeadm, kubelet and kubectl on the host machine (Guide)
     Add Google GPG key to keystore
     `sudo apt-get install -y kubelet kubeadm kubectl`
+    Installer kubectl
+   1. Last ned kubectl `curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"`
+   2. Installer `sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl`
+   3. Sjekk at kubectl ble installert `kubectl version --client`. Client Version: v1.31.2
+      Kustomize Version: v5.4.2 er riktig. 
 4.                             Initialize Kubernetes on your host with the following command:
     `kubeadm init --pod-network-cidr=10.244.0.0/16`
     Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
