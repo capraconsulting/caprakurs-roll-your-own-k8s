@@ -213,7 +213,7 @@ Guide: [Creating a single control-plane cluster with kubeadm](https://kubernetes
 
 TL;DR:
 
-1.  Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
+1. (Jakob is working on howto here) Install Docker on your host machine. Docker will be detected automatically by Kubernetes on initialization as our container runtime
 2.  Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
 3.                             Install kubeadm, kubelet and kubectl on the host machine (Guide)
     Add Google GPG key to keystore
