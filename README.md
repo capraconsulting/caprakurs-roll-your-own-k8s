@@ -220,14 +220,14 @@ TL;DR:
        sudo apt install docker.io
        ```
         </details>
-3. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
-4. (Jakob jobber med denne)                            Install kubeadm, kubelet and kubectl on the host machine (Guide)
+2. (Jakob jobber med denne. Mer spesifikt. Leser om flanell og pr;ver [ finne ut hvordan installere) Decide on a Pod network add-on. This is required to get network between your pods. We will use [Flannel](https://github.com/coreos/flannel).
+3. (Jakob jobber med denne)                            Install kubeadm, kubelet and kubectl on the host machine (Guide)
     Add Google GPG key to keystore
     `sudo apt-get install -y kubelet kubeadm kubectl`
-5.                             Initialize Kubernetes on your host with the following command:
+4.                             Initialize Kubernetes on your host with the following command:
     `kubeadm init --pod-network-cidr=10.244.0.0/16`
     Note: `--pod-network-cidr=10.244.0.0/16` is required to use Flannel as networking
-6.                             Install Flannel:
+5.                             Install Flannel:
     `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/2140ac876ef134e0ed5af15c65e414cf26827915/Documentation/kube-flannel.yml`
 
 <details>
