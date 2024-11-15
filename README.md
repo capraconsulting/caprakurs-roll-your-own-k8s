@@ -271,15 +271,39 @@ All worker nodes run a set of services which together constitutes the Kubernetes
 
 ## Installing Kubernetes
 
-Guide: [Creating a single control-plane cluster with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
+This part is an adaption of the official Kubernetes guide for `kubeadm`: [Creating a single control-plane cluster with kubeadm](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 
-**TODO: Update this step-by-step guide to 2024-standard. ALSO: Specify an older Kubernetes version (not too old!) so that we can update our cluster later.**
+### Provisioning Infrastructure
 
+We will use Terraform to provision the infrastructure required for our Kubernetes cluster. The Terraform configuration is located in the `infa` directory in this repository.
 
-1. Prepare networking for k8s:
+In order to boot everything up, `cd` into the directory and run:
+```bash
+terraform init
+terraform plan
+terraform apply
+```
+
+Once everything is applied, you should have 3 EC2 nodes in your AWS account, in region `eu-west-1`. Log into the console to check out that everything is as expected.
+
+There is a script `infa/ssh_to_machine.sh` that easily lets you SSH into the machines you have created through Terraform.
+
+### Installing Kubernetes on the nodes
+
+For each of the provisioned EC2 instances, use the `ssh_to_machine.sh` script to `ssh` into mthe machine and perform the following steps:
+
+> NOTE: Start of configuration required on ALL NODES
+
+#### Prepare networking for k8s:
+
+Update package repositories so that we can install the latest packages:
 ```bash
 sudo apt-get update -y
+```
 
+Enable IP forwarding and load required kernel modules:
+
+```bash
 sudo cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -290,36 +314,57 @@ sudo sysctl -w net.ipv4.ip_forward=1
 
 sudo modprobe overlay
 sudo modprobe br_netfilter
+```
 
+Disable swap:
+
+```bash
 swapoff -a
 (crontab -l 2>/dev/null; echo "@reboot /sbin/swapoff -a") | crontab - || true
 
 ```
 
-1. Install `containerd`, our container runtime
+#### Install `containerd`, our container runtime
+
+Kubernetes requires *something* to run our containers. As mentioned previously, this can be anything that implements the `CRI` (Container Runtime Interface). We will use `containerd`, which is a relatively lightweight container runtime.
+
 ```bash
 wget https://github.com/containerd/containerd/releases/download/v1.6.8/containerd-1.6.8-linux-amd64.tar.gz
 sudo tar Cxzvf /usr/local containerd-1.6.8-linux-amd64.tar.gz
-
+```
+```bash
 wget https://github.com/opencontainers/runc/releases/download/v1.1.3/runc.amd64
 sudo install -m 755 runc.amd64 /usr/local/sbin/runc
-
+```
+```bash
 wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
 sudo mkdir -p /opt/cni/bin
 sudo tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.1.1.tgz
-
+```
+```bash
 sudo mkdir /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
-
+```
+```bash
 sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
 sudo curl -L https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -o /etc/systemd/system/containerd.service
-
+```
+```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now containerd
 sudo systemctl status containerd
 ```
 
-1. Install Kubernetes tooling
+#### Install Kubernetes tooling
+
+This is where the fun begins. We need to install a few tools that will help us manage our cluster. These are
+
+- `kubelet`, the service that must run on all nodes and communicates with the Kubernetes control plane.
+- `kubeadm`, the command-line tool used for bootstrapping a Kubernetes cluster.
+- `kubectl`, the command-line tool used to interact with the Kubernetes API.
+
+You might have used `kubectl` previously, as it is the most common way to interact with Kubernetes clusters. We will also use it from the Control Plane node to get insights into our configuration.
+
 ```bash
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -328,7 +373,11 @@ echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.
 sudo apt-get update -y
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
+```
 
+We also want to add some xtra args to our `kubelet` service. This is because we want to use the `ens5` network interface for our Kubernetes cluster.
+
+```bash
 sudo apt install jq -y
 export local_ip="$(ip --json addr show ens5 | jq -r '.[0].addr_info[] | select(.family == "inet") | .local')"
 export IPADDR="$local_ip"
