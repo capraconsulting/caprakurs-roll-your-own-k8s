@@ -292,7 +292,7 @@ There is a script `infa/ssh_to_machine.sh` that easily lets you SSH into the mac
 
 For each of the provisioned EC2 instances, use the `ssh_to_machine.sh` script to `ssh` into mthe machine and perform the following steps:
 
-> NOTE: Start of configuration required on ALL NODES
+> NOTE: START of configuration required on ALL NODES
 
 #### Prepare networking for k8s:
 
@@ -384,64 +384,87 @@ export IPADDR="$local_ip"
 echo "KUBELET_EXTRA_ARGS=--node-ip=$local_ip" | sudo tee /etc/default/kubelet > /dev/null
 ```
 
-1. Export required cluster config variables
+> NOTE: END of configuration required on ALL NODES
+
+Once you have done all of the above on ALL NODES(!), you can proceed to create your Kubernetes cluster on the Control Plane node. Which node is the control plane, you might ask? Well, any of them! The Control Plane does not exist yet, so you can choose any of your nodes to bootstrap as your Control Plane. The important thing here is the ONLY ONE NODE should be initialized as a Control Plane node.
+
+> NOTE: START of configuration required on CONTROL PLANE
+
+Export required cluster config variables
+
 ```bash
 export NODENAME=$(hostname -s)
 export POD_CIDR="10.244.0.0/16"
 
 ```
 
-1. Create K8s cluster
+**Drumroll** Create your Kubernetes cluster:
+
 ```bash
 sudo kubeadm init --apiserver-advertise-address=$IPADDR  --apiserver-cert-extra-sans=$IPADDR  --pod-network-cidr=$POD_CIDR --node-name $NODENAME --ignore-preflight-errors Swap
 ```
 
-1. Make k8s available to current user 
+Make Kubernetes reachable through `kubectl`:
+
 ```bash
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
-1. Copy the kubeadm join command from output. 
+
+> NOTE: END of configuration required on CONTROL PLANE
+
+You now have a running Kubernetes cluster!
+
+You can verify that your control plane is ready by running the following command on the Control Plane node:
+
+```bash
+kubectl get nodes
+```
+
+Note: All nodes should have status NotReady as they are missing network configuration.
+You can also see the pods running:
+
+```bash
+kubectl get pods  --all-namespaces
+```
+
+Now you want to configure your worker nodes. They already have all the tooling installed, so you just need add them to the existing cluster. Perform the following commands on the TWO worker nodes in our cluster (NOT the Control Plane!)
+
+> NOTE: START of configuration required on WORKER NODES
+
+When you bootstrapped your cluster on the Control Node, the output from the command contained a token and a command to add more nodes to the cluster. Copy the kubeadm join command from output and run it with `sudo` on the Worker Nodes:
+
 ```bash
 sudo kubeadm join [YOURMASTERNODEIP]:6443 - token [thetokendisplayed] \
  - discovery-token-ca-cert-hash sha256:[thetokendisplayed]
 ```
 
-1. Verify the Nodes are registered:
+> NOTE: END of configuration required on WORKER NODES
+
+Back on the Control Plane, verify that the Nodes are registered:
 
 ```bash
 kubectl get nodes
 ```
-Note: All notes should have status NotReady as they are missing internet
+Note: All notes should still have status NotReady as they are missing networking.
 You can also see the pods running:
+
 ```bash
 kubectl get pods  --all-namespaces
 ```
 
-<details>
-<summary>Vocabulary</summary>
+Try playing around with the `kubectl` command to see what other information you can get from your cluster. What other resources are already deployed in the cluster? How many pods are running?
 
-Control-plane
+Find out how to get logs from your cluster by reading the help pages through `kubectl --help`.
 
-- The container orchestration layer that exposes the API and interfaces to define, deploy, and manage the lifecycle of containers
+### Installing networking
 
-Node
+There are many ways to do networking in Kubernetes, where networking itself is implemented as an `Addon`. An Addon is just a set of Kubernetes objects that implement some functionality. Think of it as a new features that uses Kubernetes resources (DaemonSet, Deployment, etc) as implementation. Some common Addons are: CoreDNS, Dashboard, Networking (Flannel++), Logging, Monitoring
 
-- (Virtual) machines that are part of our cluster. Runs containerized applications.
-  Controlled by the control plane
 
-Addon
 
-- Extra features that uses Kubernetes resources (DaemonSet, Deployment, etc) as implementation. They are really just sets of Kubernetes objects.
-- Common addons: CoreDNS, Dashboard, Networking (Flannel++), Logging, Monitoring
-
-</details>
-
-## Install Flannel 
-`kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
-
-## What is a Pod network addon?
+### What is a Pod network addon?
 
 Kubernetes does not enable communication between pods by default.
 
@@ -460,9 +483,29 @@ Each network addon uses their own default IP range.
 - Flannel uses `10.244.0.0/16` by default, hence the `--pod-network-cidr=10.244.0.0/16` argument to kubeadm when creating the cluster.
   - `10.244.0.0/16` is known as CIDR notation, hence the argument name
 
+
+### Install Flannel 
+
+Installing Flannel is straightforward with a premade YAML configuration file. If you have done everything correctly, this should just work:
+
+`kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
+
 Once Flannel is installed, CoreDNS should be running
 
-- Can be checked with: `kutectl get pods --all-namespaces`
+Once again, check your current status with:
+
+```bash
+kubectl get nodes
+```
+Note: All notes should now have status `Ready` as they now have networking!
+
+You can also see the pods running:
+
+```bash
+kubectl get pods  --all-namespaces
+```
+
+There should be some more pods added by Flannel.
 
 ## Where are we now?
 
