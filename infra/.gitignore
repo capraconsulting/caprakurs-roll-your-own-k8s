@@ -50,3 +50,7 @@ terraform.rc
 *.pem
 
 dns.json
+
+hello.yaml
+ingress.yaml
+service.yaml
