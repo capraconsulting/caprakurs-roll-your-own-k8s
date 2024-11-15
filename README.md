@@ -87,6 +87,7 @@ When creating an account in AWS, you will by default create a single root user, 
 1. Scroll down to the "Access keys" section and click "Create access key"
 1. Select use case "Command Line Interface (CLI)". Tick the box where it says you understand what you are doing and click "Next"
 1. Copy the Access Key and Secret Access Key to somewhere secure. You will not be able to view the secret again.
+1. Run `aws configure` in your terminal. You will be prompted for the access key and secret. Set default region to `eu-west-1`
 
 1. (Optional) Add profile to aws-vault, see below
 
