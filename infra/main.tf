@@ -4,7 +4,7 @@ locals {
     project = "${local.name_prefix}-k8s"
   }
   key_name        = "${local.name_prefix}-pk"
-  number_of_nodes = 12
+  number_of_nodes = 3
 }
 
 
