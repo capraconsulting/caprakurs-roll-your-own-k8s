@@ -296,42 +296,30 @@ swapoff -a
 
 ```
 
-1. Install containerd, our container runtime 
+1. Install `containerd`, our container runtime
 ```bash
-
-
-# INSTALL CONTAINERD
 wget https://github.com/containerd/containerd/releases/download/v1.6.8/containerd-1.6.8-linux-amd64.tar.gz
-
 sudo tar Cxzvf /usr/local containerd-1.6.8-linux-amd64.tar.gz
 
 wget https://github.com/opencontainers/runc/releases/download/v1.1.3/runc.amd64
-
 sudo install -m 755 runc.amd64 /usr/local/sbin/runc
 
 wget https://github.com/containernetworking/plugins/releases/download/v1.1.1/cni-plugins-linux-amd64-v1.1.1.tgz
-
 sudo mkdir -p /opt/cni/bin
-
 sudo tar Cxzvf /opt/cni/bin cni-plugins-linux-amd64-v1.1.1.tgz
 
 sudo mkdir /etc/containerd
-
 containerd config default | sudo tee /etc/containerd/config.toml
 
 sudo sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
-
 sudo curl -L https://raw.githubusercontent.com/containerd/containerd/main/containerd.service -o /etc/systemd/system/containerd.service
 
 sudo systemctl daemon-reload
-
 sudo systemctl enable --now containerd
-
 sudo systemctl status containerd
-# END CONTAINERD
 ```
 
-1. Install k8s
+1. Install Kubernetes tooling
 ```bash
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
@@ -401,7 +389,7 @@ Addon
 
 </details>
 
-## Install Flanell 
+## Install Flannel 
 `kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
 
 ## What is a Pod network addon?
@@ -433,35 +421,50 @@ We have a cluster!
 
 We have networking between pods!
 
-But we don’t have any applications :(
+But we don’t have any applications `:(`
+
+
+## Containers, pods, replicas, deployments, services
+
+[Pods](https://kubernetes.io/docs/concepts/workloads/pods/) are the smallest deployable units of computing that you can create and manage in Kubernetes. A Pod's contents are always co-located and co-scheduled, and run in a shared context. A Pod models an application-specific "logical host": it contains one or more application containers which are relatively tightly coupled.
+
+![Pod](./assets/pod.png)
+
+A Pod is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers. We only have one container per pod in our example, which is a fairly common use-case. As well as application containers, a Pod can contain init containers that run during Pod startup. You can also inject ephemeral containers for debugging a running Pod.
+
+![Pod with containers](./assets/pod-with-containers.png)
+
+We want multiple copies of our pod to run simultaneously, these are called replicas. Replicas are controlled by [ReplicaSets](https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/). A ReplicaSet ensures that a specified number of pod replicas are running at any given time. If there are too many pods running, it will terminate some of them; if there are too few, it will create new ones. This is useful for scaling and ensuring high availability.
+
+![ReplicaSet](./assets/replicasets.png)
+
+Together, this configuration constitutes a [Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/). A Deployment manages ReplicaSets and provides declarative updates to Pods along with a lot of other useful features (like rolling updates, rollbacks, etc.). A Deployment also functions as a gathering backend for other objects like Ingress and Services. It is one of the most commonly used Kubernetes object types.
+
+![Deployment](./assets/deployment.png)
+
+Each pod is an independent Kubernetes object, and the ReplicaSets and Deployments manage the scaling and lifecycle of the pods. The network traffic however is not managed by deployments, but rather by a [Service](https://kubernetes.io/docs/concepts/services-networking/service/). A Service is an abstraction that defines a logical set of Pods and a policy by which to access them. A Service provides a stable network identity to Pods, even if the pods are recreated or scaled. Services can be exposed internally within the cluster or externally to the internet. They also provide load balancing and service discovery capabilities.
+
+![Service](./assets/service.png)
+
+In our workshop, we use a [NodePort](https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport) Service, which is a very simple service type that exposes a service on each Node's IP at a static port. This is useful for development and testing, but not recommended for production. This means that you can access the service by using any of the nodes' IPs and the static port. The default range for NodePorts is 30000-32767, but this can be configured in the Kubernetes cluster configuration.
+
+![NodePort](./assets/nodeport.png)
+
+The other common Service type is a [LoadBalancer](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer), which is used to expose a service externally through an Ingress. This type of service is typically used in production environments.
+
 
 ## Deploying our first application
 
 We want to deploy a container that responds with “Hello world!” when receiving a request
 
-### Containers, pods, replicas, deployments, services
 
-A unit we want to deploy is called a pod.
-
-A pod can consist of multiple containers that makes up the application. We only have one container per pod in our example.
-
-We want multiple copies of our pod to run simultaneously, these are called replicas.
-
-Together, this configuration constitutes a deployment.
-
-Each pod is an independent Kubernetes object. We can hide this detail behind a service, that can load balance (and more) between the pods
-
-## Deploying with YAML configuration
+### Deploying with YAML configuration
 
 Kubernetes configuration files are written in YAML.
 
-Configuration for our hello-kubernetes deployment →
+Configuration for our `hello-kubernetes` deployment can be found below. Put it inside a `hello-world-deployment.yaml` file and apply it with `kubectl apply -f hello-world-deployment.yaml`:
 
-Deploy with the following command:
-
-- `kubectl apply -f hello-world.yaml`
-
-```
+```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -484,13 +487,11 @@ spec:
           ports:
             - containerPort: 8080
 ```
+This will create a Deployment with a ReplicaSet of three pods. Each pod will run a container with the `paulbouwer/hello-kubernetes:1.8` image. The container listens on port `8080`. The Deployment ensures that there are always three pods running. If a pod goes down, the Deployment will automatically create a new one to replace it.
 
-Create a service to abstract away the pods →
-Deploy with the following command:
+We now want a service to abstract away the pods. We will be using a NodePort Service that will expose the Pods to the outside world. Put the following configuration in a file called `hello-world-service.yaml` and apply it with the following command: `kubectl apply -f hello-world-service.yaml`
 
-- `kubectl apply -f service.yml`
-
-```
+```yaml
 apiVersion: v1
 kind: Service
 metadata:
@@ -504,7 +505,7 @@ spec:
     app: hello-kubernetes
 ```
 
-## Where are we now?
+### Where are we now?
 
 We have a cluster!
 
@@ -523,9 +524,13 @@ put these together as in:
 etc: `ec2.dns.compute.aws:32001`
 and you should have you perfectly styled website!
 
+## Deploying a Helm Chart
+
+- Install Helm
+- Deploy a Chart and expose it through a NodePort
 
 ## Next steps
-
+- Kill a node and watch how your deployments react. They will be moved to another node in just a few seconds.
 - Fix nginx-ingress in order to have load balancers and ingress routes without going directly at a service
 - Setup SSL/TLS termination in our Ingress
 - Add another node to the cluster
