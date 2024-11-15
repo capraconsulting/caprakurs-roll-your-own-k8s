@@ -299,7 +299,7 @@ There is a script `infa/ssh_to_machine.sh` that easily lets you SSH into the mac
 
 ### Installing Kubernetes on the nodes
 
-For each of the provisioned EC2 instances, use the `ssh_to_machine.sh` script to `ssh` into mthe machine and perform the following steps:
+For each of the provisioned EC2 instances, use the `ssh_to_machine.sh` script to `ssh` into the machine and perform the following steps:
 
 > NOTE: START of configuration required on ALL NODES
 
