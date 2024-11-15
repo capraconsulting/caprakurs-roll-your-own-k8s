@@ -78,7 +78,7 @@ When creating an account in AWS, you will by default create a single root user, 
 
 1. Log in to your AWS account
 1. Go to the IAM Service
-1. Select "Access ,anagement -> Users" from the left-hand menu.
+1. Select "Access Management -> Users" from the left-hand menu.
 1. Press the orange "Create User" button
 1. Provide a username and password. Make sure to tick the box "Provide user access to the AWS Management Console"
 1. On the "Set Permissions" page, click the "Attach policies directly" box and attach "AdministratorAccess". Note: This is sually a pretty bad idea, and you should probably delete this user once your are done with the workshop.
