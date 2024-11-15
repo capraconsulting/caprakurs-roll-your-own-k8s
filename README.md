@@ -277,7 +277,8 @@ This part is an adaption of the official Kubernetes guide for `kubeadm`: [Creati
 
 ### Provisioning Infrastructure
 
-We will use Terraform to provision the infrastructure required for our Kubernetes cluster. The Terraform configuration is located in the `infa` directory in this repository.
+We will use Terraform to provision the infrastructure required for our Kubernetes cluster. The Terraform 
+configuration is located in the `infra` directory in this repository.
 
 Log in to your AWS account in your shell. 
 You can do this by running 
@@ -285,7 +286,7 @@ You can do this by running
 aws-vault exec <profile>
 ```
 
-In order to boot everything up, `cd` into the directory and run:
+In order to boot everything up, `cd infra` into the directory and run:
 ```bash
 terraform init
 terraform plan
