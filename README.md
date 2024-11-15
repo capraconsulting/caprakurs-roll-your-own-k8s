@@ -445,8 +445,8 @@ Now you want to configure your worker nodes. They already have all the tooling i
 When you bootstrapped your cluster on the Control Node, the output from the command contained a token and a command to add more nodes to the cluster. Copy the kubeadm join command from output and run it with `sudo` on the Worker Nodes:
 
 ```bash
-sudo kubeadm join [YOURMASTERNODEIP]:6443 - token [thetokendisplayed] \
- - discovery-token-ca-cert-hash sha256:[thetokendisplayed]
+sudo kubeadm join [YOURMASTERNODEIP]:6443 --token [thetokendisplayed] \
+ --discovery-token-ca-cert-hash sha256:[thetokendisplayed]
 ```
 
 > NOTE: END of configuration required on WORKER NODES
