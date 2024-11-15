@@ -113,7 +113,9 @@ Cons:
 - Most people are probably used to the --profile. But just try it. You will love it!
 
 ### How to use it?
-
+1. Add your profile: `aws-vault add <profile>`
+   * Enter Access Key Id: ABDCDEFDASDASF
+   * Enter Secret Key: %%%
 1. Activate a shell by `aws-vault exec <profile>`
 1. Login in a browser with `aws-vault login <profile>`
 1. Thank me later
@@ -276,6 +278,12 @@ This part is an adaption of the official Kubernetes guide for `kubeadm`: [Creati
 ### Provisioning Infrastructure
 
 We will use Terraform to provision the infrastructure required for our Kubernetes cluster. The Terraform configuration is located in the `infa` directory in this repository.
+
+Log in to your AWS account in your shell. 
+You can do this by running 
+```bash 
+aws-vault exec <profile>
+```
 
 In order to boot everything up, `cd` into the directory and run:
 ```bash
