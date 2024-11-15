@@ -401,6 +401,9 @@ Addon
 
 </details>
 
+## Install Flanell 
+`kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml`
+
 ## What is a Pod network addon?
 
 Kubernetes does not enable communication between pods by default.
@@ -434,13 +437,9 @@ But we don’t have any applications :(
 
 ## Deploying our first application
 
-**TODO: Here we can be a bit more creative. How about a a backend and a NextJS-app that performs server-side rendering? Then we can check that out networking is functional**
-
 We want to deploy a container that responds with “Hello world!” when receiving a request
 
-- This little beauty: https://github.com/paulbouwer/hello-kubernetes
-
-## Containers, pods, replicas, deployments, services
+### Containers, pods, replicas, deployments, services
 
 A unit we want to deploy is called a pod.
 
@@ -460,13 +459,15 @@ Configuration for our hello-kubernetes deployment →
 
 Deploy with the following command:
 
-- `kubectl apply -f hello-kubernetes-deployment.yml`
+- `kubectl apply -f hello-world.yaml`
 
 ```
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-kubernetes
+  labels:
+    app: hello-kubernetes
 spec:
   replicas: 3
   selector:
@@ -478,27 +479,27 @@ spec:
         app: hello-kubernetes
     spec:
       containers:
-      - name: hello-kubernetes
-        image: paulbouwer/hello-kubernetes:1.8
-        ports:
-        - containerPort: 8080
+        - name: hello-kubernetes
+          image: paulbouwer/hello-kubernetes:1.8
+          ports:
+            - containerPort: 8080
 ```
 
 Create a service to abstract away the pods →
 Deploy with the following command:
 
-- `kubectl apply -f hello-kubernetes-service.yml`
+- `kubectl apply -f service.yml`
 
 ```
 apiVersion: v1
 kind: Service
 metadata:
-  name: hello-kubernetes
+  name: hello-kubernetes-service
 spec:
-  type: LoadBalancer
+  type: NodePort
   ports:
-  - port: 80
-    targetPort: 8080
+    - port: 80
+      targetPort: 8080
   selector:
     app: hello-kubernetes
 ```
@@ -511,48 +512,21 @@ We have networking between pods!
 
 We have a deployment!
 
-But we don’t have any users :(
-
-## We need to expose our service to the world!
-
-We need an Ingress to route traffic into our cluster
-
-Install an ingress-controller. We will use [nginx-ingress](https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-manifests/).
-
-Make sure to deploy with a DaemonSet configuration, it makes life easier
-
-Deploy an ingress that routes traffic to our service:
-
-- `kubectl apply -f hello-kubernetes-ingress.yml`
-
-```
-apiVersion: networking.k8s.io/v1beta1
-kind: Ingress
-Metadata:
-  name: hello-kubernetes-ingress
-spec:
-  Rules:
-    - host: kubernetes.santi.no
-      http:
-        paths:
-        - path: /
-          backend:
-            serviceName: hello-kubernetes
-            servicePort: 80
+And we have a hacky way to access a service inside out Cluster! Now you can check out your ip/public dns and connect to the nodeport.
+You can find you public ips from aws by running `aws ec2 describe-instances --query "Reservations[*].Instances[*].{ip:PublicIpAddress,privip:PrivateIpAddress,tags:Tags}"`
+To ge the port the service is forwarding packtes to, run: 
+```bash
+kubectl get service hello-kubernetes-service -o jsonpath='{.spec.ports[0].nodePort}'
 ```
 
-## Where are we now?
+put these together as in:
+etc: `ec2.dns.compute.aws:32001`
+and you should have you perfectly styled website!
 
-We have a cluster!
-
-We have networking between pods!
-
-We have a deployment!
-
-We have users!
 
 ## Next steps
 
+- Fix nginx-ingress in order to have load balancers and ingress routes without going directly at a service
 - Setup SSL/TLS termination in our Ingress
 - Add another node to the cluster
 - [Upgrade your Kubernetes cluster version without downtime](https://github.com/stakater/til/blob/master/kubernetes/upgrading-clusters-with-zero-downtime.md)
