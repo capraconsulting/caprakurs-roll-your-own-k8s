@@ -627,13 +627,26 @@ Put these together as in: `ec2.dns.compute.aws:32001` in your browser, and you s
 
 [Helm](https://helm.sh/) is known as the package manager for Kubernetes. It allows you to deploy applications using pre-configured [Charts](https://artifacthub.io/docs/). In this section, we'll deploy an application using Helm.
 
-- Install Helm
-- Deploy a Chart and expose it through a NodePort
+### Install Helm
+
+```bash
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+sudo apt-get install apt-transport-https --yes
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+sudo apt-get update
+
+sudo apt-get install helm -y
+```
+
+We now need to find a Chart and deploy it through a NodePort. [Follow this guide](https://medium.com/@veerababu.narni232/writing-your-first-helm-chart-for-hello-world-40c05fa4ac5a) for how to do this.
 
 ## Next steps
-- Change the 
+- Change the number of replicas in the `hello-kubernetes-deployment.yml` we created earlier to deploy more replicas.
 - Kill a node and watch how your deployments react. They will be moved to another node in just a few seconds.
-- Fix nginx-ingress in order to have load balancers and ingress routes without going directly at a service
+
+**Advanced**
+- Fix nginx-ingress in order to have load balancers and ingress routes without going directly at a service. Checkout the branch `networking` in this repo and follow the part where you setup `Cilium` or `NGINX Ingress`
 - Setup SSL/TLS termination in our Ingress
 - Add another node to the cluster
 - [Upgrade your Kubernetes cluster version without downtime](https://github.com/stakater/til/blob/master/kubernetes/upgrading-clusters-with-zero-downtime.md)
