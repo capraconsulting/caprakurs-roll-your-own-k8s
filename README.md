@@ -606,22 +606,24 @@ We have networking between pods!
 We have a deployment!
 
 And we have a hacky way to access a service inside out Cluster! Now you can check out your ip/public dns and connect to the nodeport.
-You can find you public ips from aws by running `aws ec2 describe-instances --query "Reservations[*].Instances[*].{ip:PublicIpAddress,privip:PrivateIpAddress,tags:Tags}"`
-To ge the port the service is forwarding packtes to, run: 
+You can find you public ips from aws by running `aws ec2 describe-instances --query "Reservations[*].Instances[*].{ip:PublicIpAddress,privip:PrivateIpAddress,tags:Tags}"` or by checking the AWS Portal.
+
+To get the port the service is forwarding packtes to, run: 
 ```bash
 kubectl get service hello-kubernetes-service -o jsonpath='{.spec.ports[0].nodePort}'
 ```
 
-put these together as in:
-etc: `ec2.dns.compute.aws:32001`
-and you should have you perfectly styled website!
+Put these together as in: `ec2.dns.compute.aws:32001` in your browser, and you should have you perfectly styled website!
 
 ## Deploying a Helm Chart
+
+[Helm](https://helm.sh/) is known as the package manager for Kubernetes. It allows you to deploy applications using pre-configured [Charts](https://artifacthub.io/docs/). In this section, we'll deploy an application using Helm.
 
 - Install Helm
 - Deploy a Chart and expose it through a NodePort
 
 ## Next steps
+- Change the 
 - Kill a node and watch how your deployments react. They will be moved to another node in just a few seconds.
 - Fix nginx-ingress in order to have load balancers and ingress routes without going directly at a service
 - Setup SSL/TLS termination in our Ingress
