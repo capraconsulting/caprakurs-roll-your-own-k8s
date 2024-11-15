@@ -94,7 +94,7 @@ When creating an account in AWS, you will by default create a single root user, 
 
 Run `aws sts get-caller-identity` in order to assure you have the correct env setup locally.
 
-## aws-vault (Optional but highly recommended)
+## aws-vault
 
 In order to easily manage what account you have activated in your cli environment, we highly recommend using aws-vault.
 Having aws-vault installed, you can simply enter the access keys from the AWS IAM User and get temporary sessions in a subshell by simple commands.
