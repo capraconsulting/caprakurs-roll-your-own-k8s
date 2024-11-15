@@ -387,6 +387,23 @@ kubectl get pods  --all-namespaces
 kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 ```
 
+# Nginx Ingress
+```
+git clone https://github.com/nginxinc/kubernetes-ingress.git --branch v3.7.1
+cd kubernetes-ingress/
+kubectl apply -f deployments/common/ns-and-sa.yaml
+kubectl apply -f deployments/rbac/rbac.yaml
+kubectl apply -f deployments/common/nginx-config.yaml
+kubectl apply -f deployments/common/ingress-class.yaml
+kubectl apply -f deployments/deployment/nginx-ingress.yaml
+kubectl create -f deployments/service/nodeport.yaml
+```
+
+
+
+## NOTE TO SELF:
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/baremetal/deploy.yaml
+
 
 # Cilium Networking
 
